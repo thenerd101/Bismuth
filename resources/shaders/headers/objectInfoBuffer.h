@@ -25,6 +25,7 @@ struct ObjectInfo {
     HSV baseHSV;
     uint detailColorChannelId;
     HSV detailHSV;
+    vec2 customTriggerScale; // For scale trigger
 };
 
 /*

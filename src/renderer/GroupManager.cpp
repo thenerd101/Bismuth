@@ -112,7 +112,8 @@ void GroupManager::initWithObjects(cocos2d::CCArray* objects) {
         GroupCombination comb = GroupCombination(object);
         auto combIndex = groupCombinationIndicies[comb];
 
-        GroupCombination transformComb = comb;
+        //GroupCombination transformComb = comb;
+        auto& transformComb = comb;
         transformComb.removeGroupIdsNotInSet(transformGroupIds);
 
         if (transformCombinationIndicies.find(transformComb) == transformCombinationIndicies.end()) {
@@ -121,7 +122,8 @@ void GroupManager::initWithObjects(cocos2d::CCArray* objects) {
             transformCombIndex++;
         }
         
-        GroupCombination alphaComb = comb;
+        //GroupCombination alphaComb = comb;
+        auto& alphaComb = comb;
         comb.removeGroupIdsNotInSet(alphaGroupIds);
 
         if (alphaIndicies.find(alphaComb) == alphaIndicies.end()) {
