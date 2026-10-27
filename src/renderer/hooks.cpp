@@ -3,6 +3,7 @@
 #include <decomp/PlayLayer.hpp>
 #include <decomp/GJBaseGameLayer.hpp>
 #include <BProfiler.hpp>
+#include "../cl.hpp"
 
 using namespace geode::prelude;
 
@@ -276,10 +277,14 @@ class $modify(RendererGJBaseGameLayer, GJBaseGameLayer) {
         if (!renderer || !renderer->useOptimizations())
             return;
 
-        for (auto array : m_optimizedGroups)
-            removeDecoObjects(array);
-        for (auto array : m_staticGroups)
-            removeDecoObjects(array);
+        for (auto array : m_optimizedGroups) {
+            if (array)
+                removeDecoObjects(array);
+        }
+        for (auto array : m_staticGroups) {
+            if (array)
+                removeDecoObjects(array);
+        }
     }
 };
 
@@ -297,5 +302,63 @@ class $modify(RendererCCDisplayLinkDirector, CCDisplayLinkDirector) {
         timer.end();
 
         BProfiler::frameEnd();
+    }
+};
+
+class OnMenuLoad;
+
+OnMenuLoad* menuLoad = nullptr;
+static bool hasAlreadyDoneMenuLoad = false;
+
+class OnMenuLoad : public CCNode {
+public:
+    void showLoadAlerts() {
+        if (!isOpenGLAtLeastVersion(4, 3)) {
+            FLAlertLayer::create(
+                "Bismuth error!",
+                "Your GPU does not support the required OpenGL 4.3!\n"
+                "Make sure your GPU drivers are updated.",
+                "Ok"
+            )->show();
+            return;
+        }
+
+        if (getGPUCoreCount() == -1) {
+            FLAlertLayer::create(
+                "No core count!",
+                "Bismuth could not find the core count of your GPU!\n"
+                "This is likely due to your GPU being AMD which is a hassle to get the core count of.\n"
+                "Make sure you search up your *GPU* core count, go to Bismuth settings, and set it there.\n",
+                "Ok"
+            )->show();
+        }
+    }
+
+    void onLoad() {
+        showLoadAlerts();
+        
+        this->release();
+        menuLoad = nullptr;
+    }
+};
+
+#include <Geode/modify/LoadingLayer.hpp>
+class $modify(MyLoadingLayer, LoadingLayer) {
+    void loadAssets() {
+        LoadingLayer::loadAssets();
+        if (m_loadStep == 14 && !m_fromRefresh && !hasAlreadyDoneMenuLoad) {
+            hasAlreadyDoneMenuLoad = true;
+            menuLoad = new OnMenuLoad;
+            menuLoad->retain();
+            CCDirector::get()->getActionManager()->addAction(
+                CCSequence::create(
+                    CCDelayTime::create(0.1f),
+                    CCCallFunc::create(menuLoad, callfunc_selector(OnMenuLoad::onLoad)),
+                    NULL
+                ),
+                menuLoad,
+                false
+            );
+        }
     }
 };

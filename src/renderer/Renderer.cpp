@@ -27,14 +27,6 @@ static Renderer* currentRenderer;
 
 Renderer::~Renderer() { terminate(); }
 
-static std::string byteSizeToString(usize size) {
-    std::string unit = "B";
-    double dsize = size;
-    if (dsize > 1000.0) { dsize /= 1000.0; unit = "kB"; }
-    if (dsize > 1000.0) { dsize /= 1000.0; unit = "MB"; }
-    return fmt::format("{:.3f}{}", dsize, unit);
-}
-
 class FinishNode : public CCNode {
 public:
     void draw() {
@@ -72,8 +64,6 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
 
     ingameEnableDisable = Mod::get()->getSettingValue<bool>("ingame_enable");
 
-    workGroupCount = Mod::get()->getSettingValue<int>("work_group_count");
-
     log::info("OpenGL Version: {}", (const char*)glGetString(GL_VERSION));
 
     auto tcache = cocos2d::CCTextureCache::get();
@@ -102,7 +92,7 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
             continue;
         }
 
-        if (object->isTrigger() || object->m_isHide)
+        if (object->isTrigger() || object->m_isHide || object->m_objectID == GUIDE_OBJECT_ID)
             continue;
 
         DEBUG_LOG("- {}, id: {}", (void*)object, object->m_objectID);
