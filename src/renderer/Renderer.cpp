@@ -607,6 +607,29 @@ void Renderer::update(float dt) {
 
     auto& gstate = layer->m_gameState;
     cameraCenterPos = ccPointToGLM(gstate.m_cameraPosition2 + CCPoint(layer->m_cameraWidth * 0.5, layer->m_cameraHeight * 0.5));
+
+    
+    if (this->layer && this->layer->m_objects) { // tinkering here
+        // Loop through all game objects actively managed in the level
+        for (auto object : CCArrayExt<GameObject*>(this->layer->m_objects)) {
+            // Find the exact spreadsheet row index Bismuth assigned to this object
+            uint32_t objectIndex = this->getObjectSRBIndex(object);
+            
+            // Calculate the exact memory address offset for the opacity property row
+            // ObjectInfo structure sizing matches your objectInfoBuffer.h file layout!
+            size_t opacityOffset = (objectIndex * sizeof(ObjectInfo)) + offsetof(ObjectInfo, opacity);
+            float liveOpacity = object->getOpacity() / 255.0f;
+            
+            // STREAM THE CHANGING NUMBERS STRAIGHT TO THE GPU EACH FRAME:
+            this->srbBuffer->write(&liveOpacity, sizeof(float), opacityOffset);
+
+            // OPTIMIZATION: UNCOMMENT THIS LINE LATER TO LINK THE SCALE TRIGGER ALSO:
+            // size_t scaleOffset = (objectIndex * sizeof(ObjectInfo)) + offsetof(ObjectInfo, customTriggerScale);
+            // glm::vec2 liveScale = { object->getScaleX(), object->getScaleY() };
+            // this->srbBuffer->write(&liveScale, sizeof(glm::vec2), scaleOffset);
+        }
+    }
+    
 }
 
 CCSpriteBatchNode* Renderer::getSpriteBatchNodeWithLayerId(LayerKey id) {

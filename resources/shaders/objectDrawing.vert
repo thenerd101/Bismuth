@@ -10,7 +10,6 @@
 //// VARIABLES TO BE TRANSFERED TO THE FRAGMENT SHADER ////
 out vec2 t_texCoord;
 out vec4 t_color;
-out float t_opacity;
 
 STORAGE_BUFFER(VERTEX_BUFFER_BINDING) VertexBuffer {
     ObjectVertex u_verticies[];
@@ -30,7 +29,4 @@ void main() {
 
     t_color    = RawSprite_color[spriteIndex];
     t_texCoord = texCoord;
-
-    uint tObjectIndex = u_inputSprites[spriteIndex].objectIndex;
-    t_opacity = u_objects[tObjectIndex].opacity;
 }
