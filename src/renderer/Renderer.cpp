@@ -598,7 +598,7 @@ void Renderer::update(float dt) {
     auto& gstate = layer->m_gameState;
     cameraCenterPos = ccPointToGLM(gstate.m_cameraPosition2 + CCPoint(layer->m_cameraWidth * 0.5, layer->m_cameraHeight * 0.5));
 
-    
+    /*
     if (this->layer && this->layer->m_objects) { // tinkering here
         // Loop through all game objects actively managed in the level
         for (auto object : CCArrayExt<GameObject*>(this->layer->m_objects)) {
@@ -619,6 +619,28 @@ void Renderer::update(float dt) {
             // this->srbBuffer->write(&liveScale, sizeof(glm::vec2), scaleOffset);
         }
     }
+    */
+    /*
+    if (this->layer && this->layer->m_objects) {
+        // 1. Create a local temporary buffer block in C++ RAM
+        std::vector<float> opacityData(this->layer->m_objects->count());
+
+        for (auto object : CCArrayExt<GameObject*>(this->layer->m_objects)) {
+            uint32_t objectIndex = this->getObjectSRBIndex(object);
+            
+            // Safety check to prevent crashing if indices are out of bounds
+            if (objectIndex < opacityData.size()) {
+                // Pull live dynamic visibility value from the game engine
+                opacityData[objectIndex] = object->getOpacity() / 255.0f;
+            }
+        }
+
+        // 2. ONE SINGLE UPLOAD CALL FOR THE ENTIRE LEVEL OBJECT TRACK:
+        // This transfers data seamlessly at maximum hardware bandwidth!
+        size_t baseOpacityOffset = offsetof(ObjectInfo, opacity); 
+        this->srbBuffer->write(opacityData.data(), opacityData.size() * sizeof(float), baseOpacityOffset);
+    }
+    */
     
 }
 
