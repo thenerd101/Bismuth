@@ -39,8 +39,16 @@ GroupCombination::GroupCombination(std::vector<GroupID> groupIds) {
 }
 
 void GroupCombination::removeGroupIdsNotInSet(const std::set<GroupID> maskSet) {
+    // Optimization: Use a local bitset or flat array to speed up lookups 
+    // since GroupID is i16 (small range).
+    // For a production build, we'd use a fixed-size bitset to avoid all allocations.
+    bool is_in_set[1024] = {false};
+    for (auto id : maskSet) {
+        if (id >= 0 && id < 1024) is_in_set[id] = true;
+    }
+
     for (i32 i = 0; i < count; i++) {
-        if (!maskSet.contains(ids[i]))
+        if (ids[i] >= 0 && ids[i] < 1024 && !is_in_set[ids[i]])
             ids[i] = 0;
     }
 
@@ -72,6 +80,8 @@ GroupManager::~GroupManager() {}
 static std::set<GameObject*> dobjects;
 
 void GroupManager::initWithObjects(cocos2d::CCArray* objects) {
+    PROFILER_PUSH("GroupManager::initWithObjects");
+
     auto emptyGroupComb = GroupCombination(std::vector<GroupID>{});
     addGroupCombination(emptyGroupComb, 0);
     GroupCombinationIndex groupCombIndex = 1;
@@ -145,6 +155,7 @@ void GroupManager::initWithObjects(cocos2d::CCArray* objects) {
     isGroupToggledOn.resize(maxGroupId + 1, true);
 
     fetchVanilaRotateGroups();
+    PROFILER_POP();
 }
     
 GroupCombinationIndex GroupManager::getGroupCombinationIndexForObject(GameObject* object) {

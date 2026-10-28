@@ -67,8 +67,16 @@ public:
     }
 
     GEODE_INLINE i32 getCount() const { return count; }
-
+    
     operator std::string() const;
+
+    GEODE_INLINE bool operator==(const GroupCombination& o) const {
+        if (count != o.count) return false;
+        for (i32 i = 0; i < count; i++) {
+            if (ids[i] != o.ids[i]) return false;
+        }
+        return true;
+    }
 
 private:
     i32 count;
@@ -76,6 +84,18 @@ private:
 };
 
 class Renderer;
+
+struct GroupCombinationHasher {
+    size_t operator()(const GroupCombination& gc) const {
+        size_t seed = 0;
+        // Use the public method to get a view of the IDs
+        auto ids_span = gc.getSpan(); 
+        for (auto id : ids_span) {
+            seed ^= std::hash<i16>{}(static_cast<i16>(id)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
 
 struct StoredGroupStates {
     std::vector<GroupCombinationState> groupStates;
@@ -181,6 +201,7 @@ private:
     
     //// PRE-PROCESSED GROUP INFO ////
 
+    /*
     u32 groupCombinationCount;
     std::map<GroupCombination, GroupCombinationIndex> groupCombinationIndicies;
 
@@ -189,8 +210,20 @@ private:
 
     u32 alphaIndiciesCount;
     std::map<GroupCombination, u32> alphaIndicies;
+    */
+
+    
+    u32 groupCombinationCount;
+    std::unordered_map<GroupCombination, GroupCombinationIndex, GroupCombinationHasher> groupCombinationIndicies;
+
+    u32 transformCombinationCount;
+    std::unordered_map<GroupCombination, u32, GroupCombinationHasher> transformCombinationIndicies;
+
+    u32 alphaIndiciesCount;
+    std::unordered_map<GroupCombination, u32, GroupCombinationHasher> alphaIndicies;
 
     std::vector<GroupCombinationIndex> firstGroupIndexPerTransformIndex;
+    
 
     /*
         This is a vector with the index being a group id and the value being
