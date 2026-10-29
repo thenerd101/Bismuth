@@ -60,12 +60,6 @@ struct alignas(4) RGBA { u8 r, g, b, a; };
 #define SPRITE_SHEET_PARTICLE 8
 
 #define RGBA uint
-#define RGBA_TO_VEC4(V) vec4( \
-    float((V) & 0xff) / 255.0, \
-    float(((V) >> 8) & 0xff) / 255.0, \
-    float(((V) >> 16) & 0xff) / 255.0, \
-    float(((V) >> 24) & 0xff) / 255.0 \
-)
 #define BitmapThing uint
 
 const float PI = 3.1415926535897932384626433832795;
@@ -109,7 +103,7 @@ mat2 scaleMatrix(float scale) {
 #define STORAGE_BUFFER(BindingId_) layout (std430, binding = BindingId_) buffer
 
 #define _SAO_VARS_AS_BUFFERS(BufferName_, Binding_, Type_, Name_) \
-    layout (std430, binding = Binding_) buffer Buffer_##_BufferName_##Name_ { \
+    layout (std430, binding = Binding_) buffer Buffer_##BufferName_##_##Name_ { \
         Type_ BufferName_##_##Name_[]; \
     };
 
@@ -130,22 +124,20 @@ mat2 scaleMatrix(float scale) {
 #define GAME_STATE_BUFFER_BINDING        3
 #define INPUT_SPRITE_BUFFER_BINDING      4
 #define WORK_GROUP_BUFFER_BINDING        5
-#define INPUT_INDEX_BUFFER_BINDING       6
-#define CULLED_INDEX_BUFFER_BINDING      7
-#define DRAW_COMMAND_BUFFER_BINDING      8
-#define SPRITE_REMAP_BUFFER_BINDING      9
-#define PRE_CULLED_SPRITE_BUFFER_BINDING 10
-#define VERTEX_BUFFER_BINDING            11
-#define CULLED_TRI_INDEX_BUFFER          12
+#define CULLED_INDEX_BUFFER_BINDING      6
+#define DRAW_COMMAND_BUFFER_BINDING      7
+#define SPRITE_REMAP_BUFFER_BINDING      8
+#define VERTEX_BUFFER_BINDING            9
+#define CULLED_TRI_INDEX_BUFFER          10
 
 #define PRE_CULLED_SPRITE(B, M) \
-    M(B, 13, vec2, startPosition) \
-    M(B, 14, uint, groupCombinationIndex)
+    M(B, 11, vec2, startPosition) \
+    M(B, 12, uint, groupCombinationIndex)
 
 #define RAW_SPRITE(B, M) \
-    M(B, 15, vec4, color) \
-    M(B, 16, vec2, position) \
-    M(B, 17, mat2, localTransform)
+    M(B, 13, vec4, color) \
+    M(B, 14, vec2, position) \
+    M(B, 15, mat2, localTransform)
 
 SAO_BUFFER(RAW_SPRITE, RawSprite)
 SAO_BUFFER(PRE_CULLED_SPRITE, PreCulledSprite)

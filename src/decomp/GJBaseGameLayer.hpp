@@ -10,4 +10,6 @@ public:
     void processRotationActions();
 
     void optimized_processRotationActions();
+
+    void processMoveActionsStep(float dt, bool visibleFrame);
 };

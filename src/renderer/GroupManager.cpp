@@ -195,8 +195,10 @@ void GroupManager::fetchVanilaRotateGroups() {
 
     for (GroupID id = 1; id < vanillaRotateGroups.size(); id++) {
         GameObject* mainObject = layer->tryGetMainObject(id);
-        if (mainObject)
-            vanillaRotateGroups[id].insert(mainObject);
+        if (mainObject) {
+            for (usize i = 0; i < mainObject->m_groupCount; i++)
+                vanillaRotateGroups[mainObject->m_groups->at(i)].insert(mainObject);
+        }
     }
 }
 
@@ -271,8 +273,8 @@ void GroupManager::rotateGroup(
     bool lockObjectRotation,
     std::optional<glm::vec2> centerPoint
 ) {
-    float cos = cosf(glm::radians(angle) * 0.5);
-    float sin = sinf(glm::radians(angle) * 0.5);
+    float cos = cosf(glm::radians(angle));
+    float sin = sinf(glm::radians(angle));
     glm::mat2 matrix = {
         { cos, -sin },
         { sin,  cos }

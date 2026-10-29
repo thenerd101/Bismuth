@@ -96,6 +96,9 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
             continue;
 
         DEBUG_LOG("- {}, id: {}", (void*)object, object->m_objectID);
+        DEBUG_LOG("  - rotation: {}, {}", object->m_startRotationX, object->m_startRotationY);
+        DEBUG_LOG("  - scale: {}, {}", object->m_startScaleX, object->m_startScaleY);
+        DEBUG_LOG("  - flip: {}, {}", object->m_startFlipX, object->m_startFlipX);
         DEBUG_LOG("  - zlayer: {}", zLayerAsString(object->getObjectZLayer()));
         DEBUG_LOG("  - zorder: {}", object->getObjectZOrder());
         DEBUG_LOG("  - blending: {}", object->m_baseOrDetailBlending);
@@ -147,9 +150,9 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
     log::info("Sprite count: {}", objectBatch.getSpriteCount());
 
     std::map<std::string, std::string> shaderMacroVariables;
-    shaderMacroVariables["TOTAL_OBJECT_COUNT"] = std::to_string(renderedGameObjectCount == 0 ? 1 : renderedGameObjectCount);
-    shaderMacroVariables["GROUP_ID_LIMIT"]     = std::to_string(groupCombCount);
-    shaderMacroVariables["TOTAL_SPRITE_COUNT"] = std::to_string(objectBatch.getSpriteCount());
+    // shaderMacroVariables["TOTAL_OBJECT_COUNT"] = std::to_string(renderedGameObjectCount == 0 ? 1 : renderedGameObjectCount);
+    // shaderMacroVariables["GROUP_ID_LIMIT"]     = std::to_string(groupCombCount);
+    // shaderMacroVariables["TOTAL_SPRITE_COUNT"] = std::to_string(objectBatch.getSpriteCount());
 
     log::info("Compiling shaders...");
     shader = Shader::create("objectDrawing.vert", "objectDrawing.frag", shaderMacroVariables);
@@ -429,6 +432,13 @@ void Renderer::draw() {
     if (debugTextEnabled) {
         glBeginQuery(GL_TIME_ELAPSED, timeElapsedQuery);
     }
+
+    /*
+    log::info("TEST");
+    for (auto& [k, v] : layer->m_effectManager->m_pulseEffectMap) {
+        log::info("  - {}", k);
+    }
+    */
 
     fetchBlendingStates();
 

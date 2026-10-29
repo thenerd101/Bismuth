@@ -198,7 +198,7 @@ class $modify(RendererGJBaseGameLayer, GJBaseGameLayer) {
             i32 targetId = cmdObj->m_targetGroupID;
             i32 centerId = cmdObj->m_centerGroupID;
 
-            auto mainObject = tryGetMainObject(centerId);
+            auto centerObject = tryGetMainObject(centerId);
             auto staticGroup = getStaticGroup(targetId);
 
             float rotation;
@@ -210,27 +210,28 @@ class $modify(RendererGJBaseGameLayer, GJBaseGameLayer) {
             if (rotation == 0.0 && !cmdObj->m_finishRelated)
                 continue;
 
-            // Idk what the hell this does but sure
-            if (eman->m_unkMap770.find({ targetId, centerId }) != eman->m_unkMap770.end()) {
-                for (auto obj : eman->m_unkMap770[{ targetId, centerId }]) {
-                    if (obj->m_someInterpValue1RelatedFalse)
-                        continue;
-                    if (staticGroup->count() != 0)
-                        rotation += cmdObj->m_someInterpValue1RelatedOne - cmdObj->m_someInterpValue1RelatedZero;
-                    else
-                        rotation += cmdObj->m_someInterpValue2RelatedOne - cmdObj->m_someInterpValue2RelatedZero;
-                }
-            }
-
-            if (mainObject == nullptr)
+            if (centerObject == nullptr)
                 renderer->getGroupManager().rotateGroup(targetId, rotation, cmdObj->m_lockObjectRotation);
             else {
-                auto pos = mainObject->getUnmodifiedPosition();
+                auto pos = centerObject->getUnmodifiedPosition();
                 renderer->getGroupManager().rotateGroup(targetId, rotation, cmdObj->m_lockObjectRotation, ccPointToGLM(pos));
+
+                auto it = m_effectManager->m_unkMap618.find(targetId);
+                CCPoint extraMove = {0, 0};
+
+                if (it != m_effectManager->m_unkMap618.end()) {
+                    if (staticGroup->count() != 0)
+                        extraMove = ccp(it->second->m_unk090, it->second->m_unk098);
+                    else
+                        extraMove = ccp(it->second->m_unk038, it->second->m_unk040);
+                }
+
+                if (extraMove != ccp(0, 0))
+                    renderer->getGroupManager().moveGroup(targetId, extraMove.x, extraMove.y);
             }
         }
 
-        GJBaseGameLayer::processRotationActions();
+        ((decomp_GJBaseGameLayer*)this)->processRotationActions();
     }
 
     void processRotationActions() {
@@ -325,6 +326,19 @@ class OnMenuLoad : public CCNode {
 public:
     void showLoadAlerts() {
         if (!isOpenGLAtLeastVersion(4, 3)) {
+            std::string version = (const char*)glGetString(GL_VERSION);
+            std::transform(version.begin(), version.end(), version.begin(), [](char ch) { return std::tolower(ch); });
+
+            if (version.find("reviangle") != std::string::npos) {
+                FLAlertLayer::create(
+                    "Bismuth error!",
+                    "You are using ReviANGLE which does not supply the required OpenGL version 4.3\n"
+                    "Disable ReviANGLE and try again.",
+                    "Ok"
+                )->show();
+                return;
+            }
+
             FLAlertLayer::create(
                 "Bismuth error!",
                 "Your GPU does not support the required OpenGL 4.3!\n"
