@@ -5,7 +5,7 @@
 	},
 	"id": "iliashdz.bismuth",
 	"name": "Bismuth (experimental)",
-	"version": "v0.1.0-alpha",
+	"version": "v0.1.0-alpha.1",
 	"developer": "IliasHDZ",
 	"description": "Rendering optimization mod",
 	"dependencies": {

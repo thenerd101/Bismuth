@@ -117,6 +117,10 @@ void processSprite(uint preCulledSpriteIndex) {
 
     color.a *= state.opacity * object.opacity;
     color.rgb *= color.a;
+    
+    if (color.a < 1.0) {
+        color.rgb = vec3(1.0, 0.0, 0.0);
+    }
 
     if (color.a <= 0.0)
         return;

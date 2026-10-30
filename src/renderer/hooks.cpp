@@ -143,13 +143,15 @@ class $modify(RendererGJBaseGameLayer, GJBaseGameLayer) {
         if (this->m_objects) { // For debugging purposes
             for (auto object : CCArrayExt<GameObject*>(this->m_objects)) {
                 // 1 is the item ID for a standard 1.0 block in GD
-                if (object->m_objectID == 1) { 
+                if (object->m_objectID == 8) { 
                     // Print the live opacity (0 to 255)
-                    geode::log::info("Live 1.0 Block Opacity: {}", object->getOpacity());
+                    geode::log::info("ID 8 | Opacity: {}", object->getOpacity());
                     break;
                 }
             }
-        }*/
+        }
+        */
+        
         auto renderer = Renderer::get();
         if (renderer)
             renderer->update(dt);

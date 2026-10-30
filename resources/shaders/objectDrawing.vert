@@ -29,4 +29,5 @@ void main() {
 
     t_color    = RawSprite_color[spriteIndex];
     t_texCoord = texCoord;
+    //t_opacity  = u_objects[spriteIndex].opacity;
 }

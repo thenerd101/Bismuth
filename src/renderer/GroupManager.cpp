@@ -37,7 +37,7 @@ GroupCombination::GroupCombination(std::vector<GroupID> groupIds) {
     std::fill(ids.begin() + count, ids.end(), 0);
     std::sort(ids.begin(), ids.begin() + count);
 }
-
+/*
 void GroupCombination::removeGroupIdsNotInSet(const std::set<GroupID> maskSet) {
     // Optimization: Use a local bitset or flat array to speed up lookups 
     // since GroupID is i16 (small range).
@@ -64,6 +64,49 @@ void GroupCombination::removeGroupIdsNotInSet(const std::set<GroupID> maskSet) {
     for (; dstI < 10; dstI++)
         ids[dstI] = 0;
     count = newCount;
+}
+*/
+
+void GroupCombination::removeGroupIdsNotInSet(const std::set<GroupID>& maskSet) {
+    
+    if (maskSet.empty()) {
+        // If the mask is empty, everything becomes 0
+        count = 0;
+        for (i32 i = 0; i < 10; i++)
+            ids[i] = 0;
+        return;
+    }
+
+    // Dynamically find the highest ID in the set so we NEVER clip high IDs (e.g. 4000, 8000)
+    // Since std::set is sorted automatically, the very last item (*maskSet.rbegin()) is always the highest!
+    GroupID highestId = *maskSet.rbegin();
+
+    // Create a dynamic bit track sized perfectly to the level's actual needs
+    // This is incredibly lightweight and safe from out-of-bounds clipping bugs
+    std::vector<bool> isInSet(highestId + 1, false);
+    for (auto id : maskSet) {
+        if (id >= 0) {
+            isInSet[id] = true;
+        }
+    }
+
+    // Combined single-pass filter and compaction-shift loop
+    i32 dstI = 0;
+    for (i32 srcI = 0; srcI < count; srcI++) {
+        if (ids[srcI] >= 0 && ids[srcI] < highestId + 1 && isInSet[ids[srcI]]) {
+            if (dstI != srcI) {
+                ids[dstI] = ids[srcI];
+            }
+            dstI++;
+        }
+    }
+
+    count = dstI;
+
+    // Zero out the remaining slots up to our fixed structure limit of 10
+    for (; dstI < 10; dstI++) {
+        ids[dstI] = 0;
+    }
 }
 
 GroupCombination::operator std::string() const {
@@ -213,6 +256,10 @@ void GroupManager::prepareGroupStateBuffer() {
     for (u32 alphaIndex = 0; alphaIndex < alphaIndiciesCount; alphaIndex++) {
         u32 combCount = *(alphaFast++);
         float alpha = 1.0;
+
+        float val = alphaValuesPerAlphaIndex[alphaIndex];
+        log::info("GroupManager Debug - AlphaIndex {} Value: {}", alphaIndex, val);
+        
         while (combCount > 0) {
             alpha *= alphaValuesPerGroupId[*(alphaFast++)];
             combCount--;
@@ -296,6 +343,14 @@ void GroupManager::rotateGroup(
 
 void GroupManager::toggleGroup(GroupID groupId, bool enabled) {
     isGroupToggledOn[groupId] = enabled;
+}
+
+void GroupManager::setGroupAlpha(GroupID groupId, float alpha) {
+    auto combIndicies = groupCombinationIndiciesPerGroupId[groupId];
+    for (auto combIndex : combIndicies) {
+        // We use .opacity because that's the exact variable name in your struct!
+        groupStates[combIndex].opacity = alpha; 
+    }
 }
 
 void GroupManager::resetGroupStates() {

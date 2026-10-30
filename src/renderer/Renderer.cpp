@@ -438,23 +438,17 @@ void Renderer::draw() {
     if (!isPaused()) {
         prepareColorChannelBuffer();
     
-        // auto timer = BProfiler::start("Generate group state buffer");
+        // Get the group states from the GroupManager.
+        auto groupStates = groupManager.getGroupStates();
+        
+        // Update the group states to the GPU buffer.
+        // This is called every frame to ensure the latest Alpha Trigger values are reflected.
         groupManager.prepareGroupStateBuffer();
-        // timer.end();
 
-        // glm::vec2 bl = view.bottomLeft;
-        // glm::vec2 br = view.bottomLeft + view.rightVector;
-        // glm::vec2 tl = view.bottomLeft + view.upVector;
-        // glm::vec2 tr = view.bottomLeft + view.rightVector + view.upVector;
-
-        // drawLine(bl, br, glm::vec4(1, 1, 0, 1));
-        // drawLine(br, tr, glm::vec4(1, 1, 0, 1));
-        // drawLine(tr, tl, glm::vec4(1, 1, 0, 1));
-        // drawLine(tl, bl, glm::vec4(1, 1, 0, 1));
+        groupManager.setGroupAlpha(3, 0);
 
         objectBatch.predraw();
     }
-
     renderingTimer.start();
 
     /*
@@ -594,6 +588,8 @@ void Renderer::update(float dt) {
 
     if (debugText->isVisible())
         updateDebugText();
+
+    //groupManager.prepareGroupStateBuffer();
 
     auto& gstate = layer->m_gameState;
     cameraCenterPos = ccPointToGLM(gstate.m_cameraPosition2 + CCPoint(layer->m_cameraWidth * 0.5, layer->m_cameraHeight * 0.5));

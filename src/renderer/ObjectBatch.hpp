@@ -41,7 +41,9 @@ using namespace geode;
 
 struct ObjectVertex {
     OBJECT_VERTEX_ATTRIBUTES(VERTEX_ATTRIBUTE_AS_STRUCT_MEMBER);
+    uint groupCombinationIndex;
 };
+
 */
 
 ////////////////////////////////////////////////
@@ -150,4 +152,5 @@ private:
     u32 currentSpriteVertexIndex;
     u32 currentSpriteSRBIndex;
     u32 currentSpriteIndex;
+    u32 currentSpriteGroupIndex;
 };

@@ -154,6 +154,7 @@ struct ObjectVertex {
     vec2 positionOffset;
     vec2 texCoord;
     int  spriteIndex;
+    // uint groupCombinationIndex;
 };
 
 STORAGE_BUFFER(CULLED_TRI_INDEX_BUFFER) CulledTriIndexBuffer {

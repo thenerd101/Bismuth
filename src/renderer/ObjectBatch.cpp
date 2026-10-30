@@ -94,6 +94,7 @@ void ObjectBatch::prepareSpriteMeshWrite(
 
     currentSpriteSRBIndex    = renderer.getObjectSRBIndex(object);
     currentSpriteVertexIndex = verticies.size();
+    currentSpriteGroupIndex  = renderer.getGroupManager().getGroupCombinationIndexForObject(object);
 }
 
 void ObjectBatch::writeSpriteVertex(glm::vec2 pos) {
@@ -112,6 +113,9 @@ void ObjectBatch::writeSpriteVertex(glm::vec2 pos) {
                       transforms.texCoordBottomLeft;
 
     vertex.spriteIndex = currentSpriteIndex;
+    //vertex.groupCombinationIndex = currentSpriteGroupIndex;
+
+
 }
 
 /*
