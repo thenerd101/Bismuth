@@ -229,6 +229,7 @@ private:
 
     
     u32 groupCombinationCount;
+    std::vector<GroupCombination> groupCombinations;
     std::unordered_map<GroupCombination, GroupCombinationIndex, GroupCombinationHasher> groupCombinationIndicies;
 
     u32 transformCombinationCount;
