@@ -25,6 +25,20 @@ using namespace geode::prelude;
 
 static Renderer* currentRenderer;
 
+u32 convertToShaderHSV(const ccHSVValue& hsv) {
+    u32 hue = hsv.h + 256.f;
+    u32 sat = ( hsv.s + (hsv.absoluteSaturation ? 1.0 : 0.0) ) * 127.5f;
+    u32 val = ( hsv.v + (hsv.absoluteBrightness ? 1.0 : 0.0) ) * 127.5f;
+
+    u32 ret = (hue & HSV_HUE_MASK) << HSV_HUE_BIT |
+              (sat & HSV_SAT_MASK) << HSV_SAT_BIT |
+              (val & HSV_VAL_MASK) << HSV_VAL_BIT;
+
+    if (hsv.absoluteSaturation) ret |= HSV_SAT_ADD;
+    if (hsv.absoluteBrightness) ret |= HSV_VAL_ADD;
+    return ret;
+}
+
 Renderer::~Renderer() { terminate(); }
 
 class FinishNode : public CCNode {
@@ -96,6 +110,9 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
             continue;
 
         DEBUG_LOG("- {}, id: {}", (void*)object, object->m_objectID);
+        DEBUG_LOG("  - rotation: {}, {}", object->m_startRotationX, object->m_startRotationY);
+        DEBUG_LOG("  - scale: {}, {}", object->m_startScaleX, object->m_startScaleY);
+        DEBUG_LOG("  - flip: {}, {}", object->m_startFlipX, object->m_startFlipX);
         DEBUG_LOG("  - zlayer: {}", zLayerAsString(object->getObjectZLayer()));
         DEBUG_LOG("  - zorder: {}", object->getObjectZOrder());
         DEBUG_LOG("  - blending: {}", object->m_baseOrDetailBlending);
@@ -147,9 +164,9 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
     log::info("Sprite count: {}", objectBatch.getSpriteCount());
 
     std::map<std::string, std::string> shaderMacroVariables;
-    shaderMacroVariables["TOTAL_OBJECT_COUNT"] = std::to_string(renderedGameObjectCount == 0 ? 1 : renderedGameObjectCount);
-    shaderMacroVariables["GROUP_ID_LIMIT"]     = std::to_string(groupCombCount);
-    shaderMacroVariables["TOTAL_SPRITE_COUNT"] = std::to_string(objectBatch.getSpriteCount());
+    // shaderMacroVariables["TOTAL_OBJECT_COUNT"] = std::to_string(renderedGameObjectCount == 0 ? 1 : renderedGameObjectCount);
+    // shaderMacroVariables["GROUP_ID_LIMIT"]     = std::to_string(groupCombCount);
+    // shaderMacroVariables["TOTAL_SPRITE_COUNT"] = std::to_string(objectBatch.getSpriteCount());
 
     log::info("Compiling shaders...");
     shader = Shader::create("objectDrawing.vert", "objectDrawing.frag", shaderMacroVariables);
@@ -330,20 +347,6 @@ void Renderer::prepareColorChannelBuffer() {
     timer.end();
 }
 
-static u32 convertToShaderHSV(const ccHSVValue& hsv) {
-    u32 hue = hsv.h + 256.f;
-    u32 sat = ( hsv.s + (hsv.absoluteSaturation ? 1.0 : 0.0) ) * 127.5f;
-    u32 val = ( hsv.v + (hsv.absoluteBrightness ? 1.0 : 0.0) ) * 127.5f;
-
-    u32 ret = (hue & HSV_HUE_MASK) << HSV_HUE_BIT |
-              (sat & HSV_SAT_MASK) << HSV_SAT_BIT |
-              (val & HSV_VAL_MASK) << HSV_VAL_BIT;
-
-    if (hsv.absoluteSaturation) ret |= HSV_SAT_ADD;
-    if (hsv.absoluteBrightness) ret |= HSV_VAL_ADD;
-    return ret;
-}
-
 void Renderer::generateStaticRenderingBuffer(std::vector<GameObject*>& objects) {
     std::vector<ObjectInfo> objectInfos;
     objectInfos.resize(renderedGameObjectCount);
@@ -430,6 +433,13 @@ void Renderer::draw() {
         glBeginQuery(GL_TIME_ELAPSED, timeElapsedQuery);
     }
 
+    /*
+    log::info("TEST");
+    for (auto& [k, v] : layer->m_effectManager->m_pulseEffectMap) {
+        log::info("  - {}", k);
+    }
+    */
+
     fetchBlendingStates();
 
     u64 prevTime = getTime();
@@ -438,14 +448,19 @@ void Renderer::draw() {
     if (!isPaused()) {
         prepareColorChannelBuffer();
     
-        // Get the group states from the GroupManager.
-        auto groupStates = groupManager.getGroupStates();
-        
-        // Update the group states to the GPU buffer.
-        // This is called every frame to ensure the latest Alpha Trigger values are reflected.
-        groupManager.prepareGroupStateBuffer();
+        // auto timer = BProfiler::start("Generate group state buffer");
+        groupManager.updateGroupStateBuffer();
+        // timer.end();
 
-        groupManager.setGroupAlpha(3, 0);
+        // glm::vec2 bl = view.bottomLeft;
+        // glm::vec2 br = view.bottomLeft + view.rightVector;
+        // glm::vec2 tl = view.bottomLeft + view.upVector;
+        // glm::vec2 tr = view.bottomLeft + view.rightVector + view.upVector;
+
+        // drawLine(bl, br, glm::vec4(1, 1, 0, 1));
+        // drawLine(br, tr, glm::vec4(1, 1, 0, 1));
+        // drawLine(tr, tl, glm::vec4(1, 1, 0, 1));
+        // drawLine(tl, bl, glm::vec4(1, 1, 0, 1));
 
         objectBatch.predraw();
     }
@@ -547,7 +562,7 @@ void Renderer::bindCullingComputeShaderBuffers() {
     gameStateBuffer->bindAsUniformBuffer(GAME_STATE_BUFFER_BINDING);
     srbBuffer->bindAsStorageBuffer(OBJECT_INFO_BUFFER_BINDING);
     colorChannelBufferObject->bindAsStorageBuffer(COLOR_CHANNEL_BUFFER_BINDING);
-    groupManager.bindGroupStateBuffer();
+    groupManager.bindGroupStateBuffers();
 }
 
 void Renderer::fetchBlendingStates() {

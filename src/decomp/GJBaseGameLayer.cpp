@@ -103,7 +103,7 @@ void decomp_GJBaseGameLayer::processRotationActions() {
 
         if (mainObject) {
             CCPoint centerPoint = mainObject->getUnmodifiedPosition();
-            CCPoint unk = claimMoveAction(gco->m_targetGroupID, ignoreStaticGroups);
+            CCPoint claimedMove = claimMoveAction(gco->m_targetGroupID, ignoreStaticGroups);
 
             m_areaTransformNode->setPosition(centerPoint);
             m_areaTransformNode->setScaleX(1.0f);
@@ -150,8 +150,8 @@ void decomp_GJBaseGameLayer::processRotationActions() {
 
                 CCPoint rotatedCenterToObject = CCPointApplyAffineTransform(centerToObject, transform1);
 
-                object->m_positionX += rotatedCenterToObject.x + unk.x - object->m_positionX + object->m_positionXOffset;
-                object->m_positionY += rotatedCenterToObject.y + unk.y - object->m_positionY + object->m_positionYOffset;
+                object->m_positionX += rotatedCenterToObject.x + claimedMove.x - object->m_positionX + object->m_positionXOffset;
+                object->m_positionY += rotatedCenterToObject.y + claimedMove.y - object->m_positionY + object->m_positionYOffset;
 
                 if (localRotation != 0.0f && object->m_canRotateFree) {
                     object->m_rotationXOffset += localRotation;
@@ -210,6 +210,7 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
         GroupManager& groupManager = Renderer::get()->getGroupManager();
 
         auto objectsToRotate = groupManager.getVanillaRotateGroup(gco->m_targetGroupID);
+        // auto objectsToRotateArray = getOptimizedGroup(gco->m_targetGroupID);
 
         CCArray* staticGroup = getStaticGroup(gco->m_targetGroupID);
 
@@ -217,12 +218,15 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
         bool ignoreStaticGroups;
 
         if (staticGroup->count() != 0) {
+            // objectsToRotateArray = getGroup(gco->m_targetGroupID);
             rotation = gco->m_someInterpValue1RelatedOne - gco->m_someInterpValue1RelatedZero;
             ignoreStaticGroups = false;
         } else {
             rotation = gco->m_someInterpValue2RelatedOne - gco->m_someInterpValue2RelatedZero;
             ignoreStaticGroups = true;
         }
+
+        // CCArrayExt<GameObject*, false> objectsToRotate = objectsToRotateArray;
 
         if (rotation == 0.0f && !gco->m_finishRelated)
             continue;
@@ -233,19 +237,6 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
 
         int targetId = gco->m_targetGroupID;
         int centerId = gco->m_centerGroupID;
-
-        // I just couldn't figure out how to do this any other way
-        float rendererRotation = rotation;
-        if (m_effectManager->m_unkMap770.find({ targetId, centerId }) != m_effectManager->m_unkMap770.end()) {
-            for (auto obj : m_effectManager->m_unkMap770[{ targetId, centerId }]) {
-                if (obj->m_someInterpValue1RelatedFalse)
-                    continue;
-                if (staticGroup->count() != 0)
-                    rendererRotation += gco->m_someInterpValue1RelatedOne - gco->m_someInterpValue1RelatedZero;
-                else
-                    rendererRotation += gco->m_someInterpValue2RelatedOne - gco->m_someInterpValue2RelatedZero;
-            }
-        }
 
         gco->m_someInterpValue1RelatedFalse = true;
 
@@ -258,11 +249,11 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
             true
         );
 
-        if (mainObject == nullptr)
-            groupManager.rotateGroup(gco->m_targetGroupID, rendererRotation, gco->m_lockObjectRotation);
+        if (!mainObject)
+            groupManager.rotateGroup(gco->m_targetGroupID, rotation, gco->m_lockObjectRotation);
         else {
             auto pos = mainObject->getUnmodifiedPosition();
-            groupManager.rotateGroup(gco->m_targetGroupID, rendererRotation, gco->m_lockObjectRotation, ccPointToGLM(pos));
+            groupManager.rotateGroup(gco->m_targetGroupID, rotation, gco->m_lockObjectRotation, ccPointToGLM(pos));
         }
 
         if (objectsToRotate.empty())
@@ -270,7 +261,10 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
 
         if (mainObject) {
             CCPoint centerPoint = mainObject->getUnmodifiedPosition();
-            CCPoint unk = claimMoveAction(gco->m_targetGroupID, ignoreStaticGroups);
+            CCPoint claimedMove = claimMoveAction(gco->m_targetGroupID, ignoreStaticGroups);
+
+            if (claimedMove != ccp(0, 0))
+                groupManager.moveGroup(gco->m_targetGroupID, claimedMove.x, claimedMove.y);
 
             m_areaTransformNode->setPosition(centerPoint);
             m_areaTransformNode->setScaleX(1.0f);
@@ -317,8 +311,8 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
 
                 CCPoint rotatedCenterToObject = CCPointApplyAffineTransform(centerToObject, transform1);
 
-                object->m_positionX += rotatedCenterToObject.x + unk.x - object->m_positionX + object->m_positionXOffset;
-                object->m_positionY += rotatedCenterToObject.y + unk.y - object->m_positionY + object->m_positionYOffset;
+                object->m_positionX += rotatedCenterToObject.x + claimedMove.x - object->m_positionX + object->m_positionXOffset;
+                object->m_positionY += rotatedCenterToObject.y + claimedMove.y - object->m_positionY + object->m_positionYOffset;
 
                 if (localRotation != 0.0f && object->m_canRotateFree) {
                     object->m_rotationXOffset += localRotation;
@@ -350,4 +344,32 @@ void decomp_GJBaseGameLayer::optimized_processRotationActions() {
     m_objectLayer->setPosition(objLayerPos);
 
     PROFILER_POP();
+}
+
+// UNTESTED
+void decomp_GJBaseGameLayer::processMoveActionsStep(float dt, bool visibleFrame) {
+    m_unked0 = 0;
+    m_disabledObjectsCount = 0;
+    m_unked8 = 0;
+    m_areaObjectsCount = 0;
+
+    for (auto& action : m_gameState.m_dynamicMoveActions) {
+        auto node = m_effectManager->tryGetMoveCommandNode(action.m_gameObject1->m_targetGroupID);
+        if (node) node->m_unk0d1 = false;
+    }
+
+    processDynamicObjectActions(1, dt);
+    processTransformActions(visibleFrame);
+    processRotationActions();
+    processDynamicObjectActions(0, dt);
+    processMoveActions();
+    processPlayerFollowActions(dt);
+    processAdvancedFollowActions(dt);
+    processFollowActions();
+    processAreaActions(dt, visibleFrame);
+    
+    if (m_isEditor) {
+        for (int i = 0; i < m_disabledObjectsCount; ++i)
+            m_disabledObjects[i]->quickUpdatePosition();
+    }
 }
