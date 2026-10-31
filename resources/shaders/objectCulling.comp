@@ -46,6 +46,9 @@ void processSprite(uint preCulledSpriteIndex) {
     //// APPLY GROUP COMBINATION STATE ////
     GroupCombinationState state = u_groupCombinationStates[groupCombinationIndex];
 
+    // AI: Matrix Multiplication Order Risk
+    // Risk: In GLSL (column-major), matrix multiplication is right-to-left. If your C++ side uses row-major matrices, the order might be flipped (startPos * transform). Wrong order results in objects being rendered upside down or in incorrect world positions, which breaks culling entirely.
+    // Check: Verify that state.positionalTransform matches your coordinate system convention. It should typically be: vec4(startPos + state.offset, 1.0) * state.positionalTransform.
     objectPosition = state.positionalTransform * startPosition + state.offset;
 
     if (!isObjectOnScreen())
@@ -117,9 +120,12 @@ void processSprite(uint preCulledSpriteIndex) {
     color.a *= state.opacity * object.opacity;
     color.rgb *= color.a;
     
+    //NOTE: This is just a test to see if the color.a value changes and works. Will be commented out to disable it using /* */
+    /*
     if (color.a < 1.0) {
         color.rgb = vec3(1.0, 0.0, 0.0);
     }
+    */
 
     if (color.a <= 0.0)
         return;
@@ -158,6 +164,11 @@ bool isObjectOnScreen() {
     // return dot(offset, offset) < 400;
 
     vec2 screenPos = vec2(dot(u_cameraRight, offset), dot(u_cameraUp, offset));
+
+    //NOTE: AI says Why it breaks:  Culling Frustum Math Mismatch | u_cameraSize is in world units (from GameStateBuffer), 
+    //      but you are mixing a hardcoded 100.0 with dynamic camera dimensions. If your 
+    //      level coordinates extend beyond 100 units, objects will be incorrectly culled 
+    //      even if they are visible on screen.
 
     const float threshold = 100.0;
 
