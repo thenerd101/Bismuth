@@ -1,0 +1,26 @@
+--- src/renderer/Renderer.cpp
++++ src/renderer/Renderer.cpp
+@@ -107 +108 @@ 
+static i32 storedProgram = 0;
+static i32 storedBlendSrcRGB = 0;
+static i32 storedBlendSrcAlpha = 0;
+static i32 storedBlendDstRGB = 0;
+static i32 storedBlendDstAlpha = 0;
+
+void storeGLStates() {
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &storedVAO);
+    glGetIntegerv(GL_CURRENT_PROGRAM, &storedProgram);
+    glGetIntegerv(GL_BLEND_SRC_RGB,   &storedBlendSrcRGB);
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, &storedBlendSrcAlpha);
+    glGetIntegerv(GL_BLEND_DST_RGB,   &storedBlendDstRGB);
+    glGetIntegerv(GL_BLEND_DST_ALPHA, &storedBlendDstAlpha);
+}
+
+void restoreGLStates() {
+    glBindVertexArray(storedVAO);
+    glUseProgram(storedProgram);
+    glBlendFuncSeparate(
+        storedBlendSrcRGB, storedBlendDstRGB, 
+        storedBlendSrcAlpha, storedBlendDstAlpha
+    );
+}

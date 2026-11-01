@@ -1,0 +1,25 @@
+--- resources/shaders/objectCulling.comp
++++ resources/shaders/objectCulling.comp
+@@ -136 +136 @@ // isObjectOnScreen() helper
+ bool isObjectOnScreen() {
+-    vec2 offset = objectPosition - u_cameraPosition;
+-    // return dot(offset, offset) < 400;
+
+-    vec2 screenPos = vec2(dot(u_cameraRight, offset), dot(u_cameraUp, offset));
+
+-    const float threshold = 100.0;
+
+-    return screenPos.x >= -threshold &&
+-           screenPos.x <= u_cameraSize.x + threshold &&
+-           screenPos.y >= -threshold &&
+-           screenPos.y <= u_cameraSize.y + threshold;
++    vec2 offset = objectPosition - u_cameraPosition;
+
++    vec2 screenPos = vec2(dot(u_cameraRight, offset), dot(u_cameraUp, offset));
+
++    float halfWidth  = u_cameraSize.x * 0.5;
++    float halfHeight = u_cameraSize.y * 0.5;
+
++    return screenPos.x >= -halfWidth && screenPos.x <= halfWidth &&
++           screenPos.y >= -halfHeight && screenPos.y <= halfHeight;
+ }
