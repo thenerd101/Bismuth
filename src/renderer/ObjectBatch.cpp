@@ -285,7 +285,8 @@ void ObjectBatch::predraw() {
     else if (!sortedBatch) {
         workGroupScheduler.waitForJobs();
         sortedBatch = workGroupScheduler.fetchSortedBatchForBlendStates(blendStates);
-        assert(sortedBatch);
+        if (!sortedBatch)
+            return;
     }
 
     Shader* computeShader = renderer.getCullingComputeShader();
