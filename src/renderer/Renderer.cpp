@@ -218,16 +218,13 @@ bool Renderer::init(PlayLayer* layer, CCArray* levelObjects) {
     debugTextOutline2->setScale(0.5);
     layer->addChild(debugTextOutline2, 999);
 
-    /*
     if (useOptimizations()) {
-        // I hope this doesn't cause any issues
-        for (auto& group : layer->m_optimizedGroups) {
-            if (group)
-                group->release();
-            group = nullptr;
-        }
+        for (auto node : CCArrayExt<CCSpriteBatchNode*, false>(layer->m_batchNodes))
+            node->removeAllChildren();
+
+        if (layer->m_endPortal)
+            layer->m_gameBlendingLayerT1->addChild(layer->m_endPortal->m_gradientBar);
     }
-    */
 
     setZOrder(-99999);
     setEnabled(true);
@@ -581,18 +578,6 @@ void Renderer::fetchBlendingStates() {
     colorChannelsIsBlending[COLOR_CHANNEL_LBG] = true;
 }
 
-Shader* Renderer::prepareDraw() {
-    PROFILER_PUSH("Renderer::prepareDraw");
-    // storeGLStates();
-    shader->use();
-    PROFILER_POP();
-    return shader.get();
-}
-
-void Renderer::finishDraw() {
-    // restoreGLStates();
-}
-
 void Renderer::update(float dt) {
     gameTimer += dt;
     
@@ -699,6 +684,8 @@ void Renderer::setEnabled(bool enabled) {
         node->setVisible(enabled);
     for (auto batch : vanillaBatchNodes)
         batch->setVisible(!enabled);
+    // For checkpoints
+    layer->m_game2LayerT1->setVisible(true);
     updateDebugText();
 }
 
